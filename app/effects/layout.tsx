@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { EffectsSidebar } from "./_components/effects-sidebar";
+import { effects } from "./_data/effects";
 
 export default function EffectsLayout({
   children,
@@ -8,7 +9,7 @@ export default function EffectsLayout({
 }>) {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <EffectsSidebar />
+      <EffectsSidebar effects={effects} />
       <main className="min-h-screen w-full pl-14">{children}</main>
     </div>
   );

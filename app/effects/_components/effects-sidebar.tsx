@@ -14,9 +14,17 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { effects } from "../_data/effects";
 
-export function EffectsSidebar() {
+type SidebarEffect = {
+  slug: string;
+  href: string;
+};
+
+type EffectsSidebarProps = {
+  effects: SidebarEffect[];
+};
+
+export function EffectsSidebar({ effects }: EffectsSidebarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -57,7 +65,7 @@ export function EffectsSidebar() {
                       variant={active ? "secondary" : "ghost"}
                       className="h-12 w-full justify-start rounded-none px-4 text-sm font-medium"
                     >
-                      <Link href={effect.href}>{effect.title}</Link>
+                      <Link href={effect.href}>{effect.slug}</Link>
                     </Button>
                   </SheetClose>
                 </div>
