@@ -7,11 +7,9 @@ export default function EffectsLayout({
   children: ReactNode;
 }>) {
   return (
-    <div className="relative min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.96),_#020617_55%)] text-slate-100">
-      <div className="mx-auto flex min-h-screen max-w-[1600px]">
-        <EffectsSidebar />
-        <main className="flex min-w-0 flex-1 flex-col">{children}</main>
-      </div>
+    <div className="min-h-screen bg-background text-foreground">
+      <EffectsSidebar />
+      <main className="min-h-screen w-full pl-14">{children}</main>
     </div>
   );
 }
