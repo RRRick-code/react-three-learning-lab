@@ -10,7 +10,7 @@ export default function EffectsLayout({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <EffectsSidebar effects={effects} />
-      <main className="min-h-screen w-full pl-14">{children}</main>
+      <main className="min-h-screen w-full bg-[#f1f1f1] pl-14">{children}</main>
     </div>
   );
 }
