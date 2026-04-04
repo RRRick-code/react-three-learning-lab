@@ -2,9 +2,9 @@
 
 import { useMemo, useRef } from "react";
 import { Canvas, useFrame, type ThreeElements } from "@react-three/fiber";
-import { GizmoHelper, GizmoViewport, OrbitControls } from "@react-three/drei";
+import { SoftShadows, GizmoHelper, GizmoViewport, OrbitControls } from "@react-three/drei";
+import { useControls } from "leva";
 import type { Group, Mesh } from "three";
-import * as THREE from "three";
 
 type Vec3 = [number, number, number];
 type SphereProps = ThreeElements["mesh"] & { position?: Vec3 };
@@ -69,27 +69,40 @@ function Spheres({ number = 20 }: SpheresProps) {
 }
 
 export default function Page() {
+  // Leva 会生成一个调参面板，方便实时修改软阴影参数。
+  const { enabled, ...config } = useControls({
+    enabled: true,
+    size: { value: 25, min: 0, max: 100 },
+    focus: { value: 0, min: 0, max: 2 },
+    samples: { value: 10, min: 1, max: 20, step: 1 }
+  })
+
   return (
     <div className="h-screen w-full">
-      <Canvas shadows={{ type: THREE.PCFShadowMap }} camera={{ position: [-5, 2, 10], fov: 60 }}>
+      <Canvas shadows camera={{ position: [-5, 2, 10], fov: 60 }}>
+        
         <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
           <GizmoViewport />
         </GizmoHelper>
         <axesHelper args={[3]} />
-        <OrbitControls />
+        <OrbitControls makeDefault />
+
+        {/* SoftShadows 会把默认阴影边缘变得更柔和。 */}
+        {enabled && <SoftShadows {...config} />}
+
         {/* 远处加一点雾，让画面层次更柔和。 */}
-        <fog attach="fog" args={["white", 0, 40]} />
+        <fog attach="fog" args={["#f5f5f5", 0, 30]} />
 
         {/* 环境光：整体提亮，避免背光面完全变黑。 */}
-        <ambientLight intensity={1} />
+        <ambientLight intensity={1.5} />
 
         {/* 主方向光：负责照明。 */}
-        <directionalLight castShadow position={[3, 8, 6]} intensity={6} shadow-mapSize={1024} shadow-radius={10}>
+        <directionalLight castShadow position={[3, 8, 8]} intensity={6} shadow-mapSize={1024} >
           <orthographicCamera attach="shadow-camera" args={[-10, 10, -10, 10, 0.1, 50]} />
         </directionalLight>
 
         {/* 补光，让阴影区域保留一些细节。 */}
-        <pointLight position={[-10, 0, -20]} color="white" intensity={100} decay={1} />
+        <pointLight position={[-10, 0, -20]} color="white" intensity={80} decay={1} />
         <pointLight position={[0, -10, 0]} color="white" intensity={50} decay={1}/>
 
         {/* 把盒子、地面和球群整体往下移动。 */}
@@ -102,7 +115,7 @@ export default function Page() {
           {/* 这个平面本身几乎不可见，主要用来接收阴影。 */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
             <planeGeometry args={[100, 100]} />
-            <shadowMaterial transparent opacity={0.3} />
+            <shadowMaterial transparent opacity={0.4} />
           </mesh>
           <Spheres />
         </group>
