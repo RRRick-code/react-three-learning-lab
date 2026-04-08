@@ -28,8 +28,8 @@ function Sphere({ position = [0, 0, 0], ...props }: SphereProps) {
     const t = easeInOutCubic((1 + Math.sin(state.clock.getElapsedTime() * factor)) / 2);
     // 在初始位置基础上，让球上下移动
     ref.current.position.y = position[1] + t * 4;
-    // 这里预留了缩放逻辑；当前乘以 0，所以视觉上不会拉伸
-    ref.current.scale.y = 1 + t * 0;
+    // 缩放逻辑
+    ref.current.scale.y = 1 + t * 0.3;
   });
 
   return (

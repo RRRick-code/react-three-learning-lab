@@ -298,7 +298,7 @@ export function EffectDetailSheet({
   const sheetWidthClass =
     mode === "source"
       ? "data-[side=left]:left-14 w-full gap-0 rounded-none border-r bg-background p-0 data-[side=left]:sm:w-[56rem] data-[side=left]:sm:max-w-[calc(100vw-3.5rem)]"
-      : "data-[side=left]:left-14 w-full gap-0 rounded-none border-r bg-background p-0 data-[side=left]:sm:max-w-xl";
+      : "data-[side=left]:left-14 w-full gap-0 rounded-none border-r bg-background p-0 data-[side=left]:sm:w-96 data-[side=left]:sm:max-w-[calc(100vw-3.5rem)]";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
