@@ -1,36 +1,24 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# react-three-learning-lab
 
-## Getting Started
+Try it in your browser 👉 **[Live Demo](https://rrrick-code.github.io/react-three-learning-lab/)**
 
-First, run the development server:
+A small `Next.js` lab for learning three.js effects, mainly through official examples and classic case studies. All effects in this project are built with TypeScript and `three.js 0.180.0`.
+Each effect lives in its own route under `app/effects/<slug>/`, with local scene code and a `note.md` file for notes and source metadata.
+Built with AI-assisted workflows.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Key Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- One effect per route for focused experiments and demos
+- Local `note.md` files for notes and source-file metadata
+- Generated static effect content from whitelisted local files
+- Static export setup with GitHub Pages-friendly base-path support
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `Next.js 16.2.2`
+- `React 19.2.4`
+- `three.js 0.180.0`
+- `@react-three/fiber 9.5.0`
+- `@react-three/drei 10.7.7`
+- `leva 0.10.1`
+- `shadcn/ui`
