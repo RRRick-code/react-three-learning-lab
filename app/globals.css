@@ -101,3 +101,69 @@ body {
     @apply h-full bg-background text-foreground antialiased;
   }
 }
+
+@layer components {
+  .effect-doc {
+    @apply text-sm leading-7 text-foreground;
+  }
+
+  .effect-doc > * + * {
+    @apply mt-4;
+  }
+
+  .effect-doc h1,
+  .effect-doc h2,
+  .effect-doc h3 {
+    @apply font-heading font-medium tracking-tight text-foreground;
+  }
+
+  .effect-doc h1 {
+    @apply text-2xl;
+  }
+
+  .effect-doc h2 {
+    @apply text-xl;
+  }
+
+  .effect-doc h3 {
+    @apply text-lg;
+  }
+
+  .effect-doc p,
+  .effect-doc li {
+    @apply text-sm text-foreground/90;
+  }
+
+  .effect-doc ul,
+  .effect-doc ol {
+    @apply ml-5 space-y-2;
+  }
+
+  .effect-doc ul {
+    @apply list-disc;
+  }
+
+  .effect-doc ol {
+    @apply list-decimal;
+  }
+
+  .effect-doc code {
+    @apply rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground;
+  }
+
+  .effect-doc pre {
+    @apply overflow-x-auto rounded-xl border bg-muted/60 p-4;
+  }
+
+  .effect-code {
+    @apply text-sm;
+  }
+
+  .effect-code pre {
+    @apply overflow-x-auto rounded-xl border bg-[#101113] p-4 text-[13px] leading-6 shadow-xs;
+  }
+
+  .effect-code code {
+    @apply font-mono;
+  }
+}

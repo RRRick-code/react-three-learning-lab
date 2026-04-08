@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useRef, useState } from "react";
 import { Canvas, useFrame, type ThreeElements } from "@react-three/fiber";
 import { SoftShadows, GizmoHelper, GizmoViewport, OrbitControls } from "@react-three/drei";
 import { useControls } from "leva";
@@ -18,7 +18,7 @@ function Sphere({ position = [0, 0, 0], ...props }: SphereProps) {
   const ref = useRef<Mesh | null>(null);
 
   // 给每个球一个固定的随机速度系数，避免组件重渲染时重新随机
-  const factor = useMemo(() => (0.5 + Math.random()) * 1, []);
+  const [factor] = useState(() => (0.5 + Math.random()) * 1);
 
   useFrame((state) => {
     if (!ref.current) return;
@@ -44,14 +44,13 @@ function Spheres({ number = 20 }: SpheresProps) {
   // 这个 ref 指向整组球的父级 group
   const ref = useRef<Group | null>(null);
   // 只在首次渲染时生成一批随机坐标，避免重渲染后球的位置跳来跳去
-  const positions = useMemo<Vec3[]>(
+  const [positions] = useState<Vec3[]>(
     () =>
       Array.from({ length: number }, () => [
         3 - Math.random() * 6,
         Math.random() * 4,
         3 - Math.random() * 6,
       ]),
-    [number]
   );
 
   useFrame((state) => {
