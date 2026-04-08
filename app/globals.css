@@ -160,7 +160,7 @@ body {
   }
 
   .effect-code pre {
-    @apply overflow-x-auto rounded-xl border bg-[#101113] p-4 text-[13px] leading-6 shadow-xs;
+    @apply overflow-x-auto rounded-none bg-[#101113] px-5 py-5 text-[13px] leading-6 shadow-none;
   }
 
   .effect-code code {

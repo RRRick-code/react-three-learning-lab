@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ScrollTextIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -294,21 +293,22 @@ export function EffectDetailSheet({
     };
   }, [mode, open, selectedSourceId, slug, source, sourceError, sourceKey]);
 
-  const title = note?.title ?? sourcesIndex?.slug ?? slug ?? "Effect detail";
-  const description =
-    mode === "notes"
-      ? "Notes for the current effect route."
-      : "Read-only source code for the current effect route.";
+  const title = mode === "notes" ? "Notes" : "Code";
+  const description = slug ?? "No active effect";
+  const sheetWidthClass =
+    mode === "source"
+      ? "data-[side=left]:left-14 w-full gap-0 rounded-none border-r bg-background p-0 data-[side=left]:sm:w-[56rem] data-[side=left]:sm:max-w-[calc(100vw-3.5rem)]"
+      : "data-[side=left]:left-14 w-full gap-0 rounded-none border-r bg-background p-0 data-[side=left]:sm:max-w-xl";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="left"
         aria-describedby={undefined}
-        className="data-[side=left]:left-14 w-full gap-0 rounded-none border-r bg-background p-0 sm:max-w-xl"
+        className={sheetWidthClass}
       >
-        <SheetHeader className="border-b px-5 py-4">
-          <SheetTitle className="pr-10 text-base">{title}</SheetTitle>
+        <SheetHeader className="gap-0.5 border-b px-5 py-4">
+          <SheetTitle className="pr-10 text-base font-semibold">{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
 
@@ -382,14 +382,8 @@ export function EffectDetailSheet({
                   />
                 ) : source ? (
                   <ScrollArea className="h-full">
-                    <div className="border-b px-5 py-3 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <ScrollTextIcon className="size-3.5" />
-                        <span>{source.path}</span>
-                      </div>
-                    </div>
                     <div
-                      className="effect-code px-5 py-5"
+                      className="effect-code"
                       dangerouslySetInnerHTML={{ __html: source.html }}
                     />
                   </ScrollArea>

@@ -11,6 +11,7 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
+  SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
 import { stripBasePath } from "@/lib/with-base-path";
@@ -86,11 +87,12 @@ export function EffectsSidebar({ effects }: EffectsSidebarProps) {
       >
         <SheetContent
           side="left"
-          showCloseButton={false}
           aria-describedby={undefined}
           className="data-[side=left]:left-14 w-64 gap-0 rounded-none border-r bg-background p-0 sm:max-w-64"
         >
-          <SheetTitle className="sr-only">Effects navigation</SheetTitle>
+          <SheetHeader className="gap-0.5 border-b px-5 py-4">
+            <SheetTitle className="pr-10 text-base font-semibold">Effects</SheetTitle>
+          </SheetHeader>
           <ScrollArea className="h-full">
             <nav className="flex flex-col py-3">
               {effects.map((effect, index) => {
