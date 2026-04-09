@@ -1,5 +1,13 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
 import { codeToHtml } from "shiki";
@@ -18,7 +26,8 @@ import type {
 
 const repoRoot = process.cwd();
 const effectsDirectory = path.join(repoRoot, "app/effects");
-const outputDirectory = path.join(repoRoot, "public/effects-content");
+const effectContentOutputDirectory = path.join(repoRoot, "public/effects-content");
+const runtimeAssetsOutputDirectory = path.join(repoRoot, "public/effects");
 
 function isEffectDirectory(directoryName: string) {
   if (directoryName.startsWith("_")) {
@@ -26,6 +35,15 @@ function isEffectDirectory(directoryName: string) {
   }
 
   return existsSync(path.join(effectsDirectory, directoryName, "page.tsx"));
+}
+
+function getEffectSlugs() {
+  return readdirSync(effectsDirectory, {
+    withFileTypes: true,
+  })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .filter(isEffectDirectory);
 }
 
 function getLanguage(relativePath: string) {
@@ -121,9 +139,9 @@ function normalizeFrontmatter(slug: string, effectDirectory: string) {
   };
 }
 
-async function buildEffectAssets(slug: string) {
+async function buildEffectContent(slug: string) {
   const effectDirectory = path.join(effectsDirectory, slug);
-  const outputRoot = path.join(outputDirectory, slug);
+  const outputRoot = path.join(effectContentOutputDirectory, slug);
   const outputSourcesDirectory = path.join(outputRoot, "sources");
   const { title, content, sourceFiles, primarySource } = normalizeFrontmatter(slug, effectDirectory);
 
@@ -176,22 +194,53 @@ async function buildEffectAssets(slug: string) {
   );
 }
 
-async function main() {
-  const effectSlugs = readdirSync(effectsDirectory, {
-    withFileTypes: true,
-  })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .filter(isEffectDirectory);
-
-  rmSync(outputDirectory, { recursive: true, force: true });
+function copyDirectory(sourceDirectory: string, outputDirectory: string) {
   mkdirSync(outputDirectory, { recursive: true });
 
-  for (const slug of effectSlugs) {
-    await buildEffectAssets(slug);
+  for (const entry of readdirSync(sourceDirectory, { withFileTypes: true })) {
+    const sourcePath = path.join(sourceDirectory, entry.name);
+    const outputPath = path.join(outputDirectory, entry.name);
+
+    if (entry.isDirectory()) {
+      copyDirectory(sourcePath, outputPath);
+      continue;
+    }
+
+    if (entry.isFile()) {
+      copyFileSync(sourcePath, outputPath);
+      continue;
+    }
+
+    throw new Error(`Unsupported asset entry "${sourcePath}". Only files and directories are supported.`);
+  }
+}
+
+function syncEffectRuntimeAssets(slug: string) {
+  const effectDirectory = path.join(effectsDirectory, slug);
+  const sourceAssetsDirectory = path.join(effectDirectory, "assets");
+  const outputAssetsDirectory = path.join(runtimeAssetsOutputDirectory, slug, "assets");
+
+  rmSync(outputAssetsDirectory, { recursive: true, force: true });
+
+  if (!existsSync(sourceAssetsDirectory)) {
+    return;
   }
 
-  console.log(`Generated effect assets for ${effectSlugs.length} effect(s).`);
+  copyDirectory(sourceAssetsDirectory, outputAssetsDirectory);
+}
+
+async function main() {
+  const effectSlugs = getEffectSlugs();
+
+  rmSync(effectContentOutputDirectory, { recursive: true, force: true });
+  mkdirSync(effectContentOutputDirectory, { recursive: true });
+
+  for (const slug of effectSlugs) {
+    await buildEffectContent(slug);
+    syncEffectRuntimeAssets(slug);
+  }
+
+  console.log(`Generated effect content and synced runtime assets for ${effectSlugs.length} effect(s).`);
 }
 
 main().catch((error: unknown) => {

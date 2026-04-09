@@ -17,6 +17,7 @@
 /.next/
 /out/
 /public/effects-content/
+/public/effects/*/assets/
 
 # production
 /build
