@@ -6,7 +6,6 @@ import { Environment, GizmoHelper, GizmoViewport, OrbitControls, useTexture, Cen
 import { Physics, useSphere } from '@react-three/cannon'
 import { EffectComposer, N8AO, SMAA, Bloom, ToneMapping } from '@react-three/postprocessing'
 import { ToneMappingMode } from "postprocessing"
-import { useControls } from 'leva'
 
 const rfs = THREE.MathUtils.randFloatSpread; // randFloatSpread(20) 会返回一个 -10 到 10 之间的随机数
 const sphereGeometry = new THREE.SphereGeometry(1, 32, 32); 
@@ -80,7 +79,7 @@ export default function Page() {
         <Environment files="./assets/adamsbridge.hdr" />
 
         <EffectComposer enableNormalPass multisampling={0}>
-          <N8AO color="black" aoRadius={2} intensity={1.8} aoSamples={6} denoiseSamples={4} />
+          <N8AO color="black" aoRadius={2} intensity={2} aoSamples={6} denoiseSamples={4} />
           <Bloom luminanceThreshold={1} luminanceSmoothing={0.15} intensity={0.25} />
           <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
           <SMAA />
