@@ -139,6 +139,11 @@ body {
     @apply ml-5 space-y-2;
   }
 
+  .effect-doc li > ul,
+  .effect-doc li > ol {
+    margin-top: calc(var(--spacing) * 2);
+  }
+
   .effect-doc ul {
     @apply list-disc;
   }

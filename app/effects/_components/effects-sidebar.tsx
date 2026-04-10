@@ -6,7 +6,6 @@ import { useState } from "react";
 import { BookOpenIcon, Code2Icon, ListIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetClose,
@@ -95,12 +94,11 @@ export function EffectsSidebar({ effects }: EffectsSidebarProps) {
           </SheetHeader>
           <ScrollArea className="h-full">
             <nav className="flex flex-col py-3">
-              {effects.map((effect, index) => {
+              {effects.map((effect) => {
                 const active = pathname === effect.href;
 
                 return (
                   <div key={effect.href}>
-                    {index > 0 ? <Separator /> : null}
                     <SheetClose asChild>
                       <Button
                         asChild
