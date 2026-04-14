@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { BookOpenIcon, Code2Icon, ListIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sheet,
-  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -26,12 +25,22 @@ type EffectsSidebarProps = {
 };
 
 type SidebarPanel = "navigation" | "notes" | "source" | null;
+type PendingNavigation = {
+  href: string;
+  originPathname: string;
+};
 
 export function EffectsSidebar({ effects }: EffectsSidebarProps) {
+  const router = useRouter();
   const pathname = stripBasePath(usePathname());
   const [openPanel, setOpenPanel] = useState<SidebarPanel>(null);
+  const [pendingNavigation, setPendingNavigation] = useState<PendingNavigation | null>(null);
 
   function handlePanelChange(panel: Exclude<SidebarPanel, null>, nextOpen: boolean) {
+    setPendingNavigation((currentPending) =>
+      panel === "navigation" && !nextOpen ? currentPending : null,
+    );
+
     setOpenPanel((current) => {
       if (nextOpen) {
         return panel;
@@ -39,6 +48,18 @@ export function EffectsSidebar({ effects }: EffectsSidebarProps) {
 
       return current === panel ? null : current;
     });
+  }
+
+  function togglePanel(panel: Exclude<SidebarPanel, null>) {
+    setPendingNavigation(null);
+    setOpenPanel((current) => (current === panel ? null : panel));
+  }
+
+  function closeNavigationPanel(nextHref: string | null = null) {
+    setPendingNavigation(
+      nextHref === null ? null : { href: nextHref, originPathname: pathname },
+    );
+    setOpenPanel((current) => (current === "navigation" ? null : current));
   }
 
   return (
@@ -51,9 +72,7 @@ export function EffectsSidebar({ effects }: EffectsSidebarProps) {
             aria-label={
               openPanel === "navigation" ? "Close effects navigation" : "Open effects navigation"
             }
-            onClick={() =>
-              setOpenPanel((current) => (current === "navigation" ? null : "navigation"))
-            }
+            onClick={() => togglePanel("navigation")}
           >
             <ListIcon />
           </Button>
@@ -64,7 +83,7 @@ export function EffectsSidebar({ effects }: EffectsSidebarProps) {
             variant={openPanel === "notes" ? "secondary" : "ghost"}
             size="icon"
             aria-label={openPanel === "notes" ? "Close notes panel" : "Open notes panel"}
-            onClick={() => setOpenPanel((current) => (current === "notes" ? null : "notes"))}
+            onClick={() => togglePanel("notes")}
           >
             <BookOpenIcon />
           </Button>
@@ -73,7 +92,7 @@ export function EffectsSidebar({ effects }: EffectsSidebarProps) {
             variant={openPanel === "source" ? "secondary" : "ghost"}
             size="icon"
             aria-label={openPanel === "source" ? "Close source panel" : "Open source panel"}
-            onClick={() => setOpenPanel((current) => (current === "source" ? null : "source"))}
+            onClick={() => togglePanel("source")}
           >
             <Code2Icon />
           </Button>
@@ -88,6 +107,27 @@ export function EffectsSidebar({ effects }: EffectsSidebarProps) {
           side="left"
           aria-describedby={undefined}
           className="data-[side=left]:left-14 w-64 gap-0 rounded-none border-r bg-background p-0 sm:max-w-64"
+          onAnimationEnd={(event) => {
+            if (event.target !== event.currentTarget) {
+              return;
+            }
+
+            if (
+              event.currentTarget.getAttribute("data-state") !== "closed" ||
+              pendingNavigation === null
+            ) {
+              return;
+            }
+
+            if (pendingNavigation.originPathname !== pathname) {
+              setPendingNavigation(null);
+              return;
+            }
+
+            const { href } = pendingNavigation;
+            setPendingNavigation(null);
+            router.push(href);
+          }}
         >
           <SheetHeader className="gap-0.5 border-b px-5 py-4">
             <SheetTitle className="pr-10 text-base font-semibold">Effects</SheetTitle>
@@ -99,15 +139,21 @@ export function EffectsSidebar({ effects }: EffectsSidebarProps) {
 
                 return (
                   <div key={effect.href}>
-                    <SheetClose asChild>
-                      <Button
-                        asChild
-                        variant={active ? "secondary" : "ghost"}
-                        className="h-12 w-full justify-start rounded-none px-4 text-sm font-medium"
+                    <Button
+                      asChild
+                      variant={active ? "secondary" : "ghost"}
+                      className="h-12 w-full justify-start rounded-none px-4 text-sm font-medium"
+                    >
+                      <Link
+                        href={effect.href}
+                        onNavigate={(event) => {
+                          event.preventDefault();
+                          closeNavigationPanel(active ? null : effect.href);
+                        }}
                       >
-                        <Link href={effect.href}>{effect.slug}</Link>
-                      </Button>
-                    </SheetClose>
+                        {effect.slug}
+                      </Link>
+                    </Button>
                   </div>
                 );
               })}
