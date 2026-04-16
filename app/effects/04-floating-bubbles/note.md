@@ -1,5 +1,5 @@
 ---
-title: Float Bubbles
+title: Floating Bubbles
 sourceFiles:
   - page.tsx
 primarySource: page.tsx
