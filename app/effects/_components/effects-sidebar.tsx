@@ -64,7 +64,7 @@ export function EffectsSidebar({ effects }: EffectsSidebarProps) {
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-[60] flex w-14 flex-col items-center justify-between border-r bg-background/95 px-2 py-3 supports-backdrop-filter:backdrop-blur-sm">
+      <aside className="fixed inset-y-0 left-0 z-60 flex w-14 flex-col items-center justify-between border-r bg-background/95 px-2 py-3 supports-backdrop-filter:backdrop-blur-sm">
         <div className="flex w-full justify-center">
           <Button
             variant={openPanel === "navigation" ? "secondary" : "ghost"}
