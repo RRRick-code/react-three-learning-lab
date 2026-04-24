@@ -20,18 +20,11 @@ function Bubble({ index, z, speed }: BubbleProps) {
   const { viewport, camera } = useThree();
   const { width, height } = viewport.getCurrentViewport(camera, [0, 0, -z]);
 
-  // const [data] = useState(() => ({
-  //   x: MathUtils.randFloatSpread(width * 1.2),
-  //   y: MathUtils.randFloatSpread(height * 2),
-  //   scale: MathUtils.randFloat(1, 3.5),
-  //   speedFactor: MathUtils.mapLinear(z, 0, 30, 1.4, 0.5) * MathUtils.randFloat(0.5, 2),
-  // }));
-
   const [data] = useState(() => {
     const minScale = 1;
     const maxScale = 3;
     // const scale = MathUtils.randFloat(minScale, maxScale);
-    const scale = MathUtils.lerp(minScale, maxScale, Math.random() < 0.5 ? Math.pow(Math.random(), 3) * 0.5 : 1 - Math.pow(Math.random(), 3) * 0.5);
+    const scale = MathUtils.lerp(minScale, maxScale, Math.random() < 0.6 ? Math.pow(Math.random(), 3) * 0.5 : 1 - Math.pow(Math.random(), 3) * 0.5);
     const scaleSpeedFactor = MathUtils.mapLinear(scale, minScale, maxScale, 1.6, 0.45);
     return {
       x: MathUtils.randFloatSpread(width * 1.2),
@@ -57,7 +50,7 @@ function Bubble({ index, z, speed }: BubbleProps) {
 }
 
 
-function Bubbles({ speed = 2, count = 80, depth = 30, easing = (x: number) => Math.sqrt(1 - Math.pow(x - 1, 2))}) {
+function Bubbles({ speed = 3, count = 80, depth = 30, easing = (x: number) => Math.sqrt(1 - Math.pow(x - 1, 2))}) {
   const ref = useRef<THREE.Group | null>(null);
   useFrame((state, delta) => {
     if (!ref.current) return;
@@ -88,7 +81,7 @@ export default function Page() {
     <div className="h-screen w-full">
       <Canvas shadows dpr={[1, 2]} 
       gl={{ antialias: false, toneMappingExposure: 1.2 }} 
-      camera={{ position: [0, 0, 12], fov: 60 }}
+      camera={{ position: [0, 0, 15], fov: 45 }}
       >
         <color attach="background" args={['#ffffff']} />
         <Environment preset="city" environmentIntensity={0.2} />
