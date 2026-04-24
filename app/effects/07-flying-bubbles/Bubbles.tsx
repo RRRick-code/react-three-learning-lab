@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import { MathUtils } from 'three'
 import { useEffect, useRef, useState } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
-import { Physics, useBox, useSphere } from '@react-three/cannon'
+import { Physics, useBox, useSphere, type WorkerApi } from '@react-three/cannon'
 
 const SPAWN_BUBBLE_COUNT = 10;
 const SPAWN_BUBBLE_INTERVAL = 1;
@@ -24,20 +24,28 @@ function getBubbleSpeedFactor(scale: number) {
   return MathUtils.mapLinear(scale, 1, 3, 1.2, 0.6) * MathUtils.randFloat(1, 1.2);
 }
 
-type BubbleKind = 'base' | 'spawn';
+type BubblePosition = [number, number, number];
 
 type BubbleBodyData = {
-  kind: BubbleKind;
-  index: number;
   scale: number;
-  radius: number;
   z: number;
   speedFactor: number;
+  exitLimit: number;
+  position: BubblePosition;
+}
+
+type BaseBubbleData = BubbleBodyData & {
+  resetY: number;
+}
+
+type SpawnBubbleData = BubbleBodyData & {
   active: boolean;
   birthTime: number;
-  exitLimit: number;
-  resetY: number;
-  position: [number, number, number];
+}
+
+type BubbleData = {
+  base: BaseBubbleData[];
+  spawn: SpawnBubbleData[];
 }
 
 type BubblesProps = {
@@ -61,7 +69,14 @@ function createBubbleScale() {
   );
 }
 
-function cloneBubbleData(bubble: BubbleBodyData): BubbleBodyData {
+function cloneBaseBubbleData(bubble: BaseBubbleData): BaseBubbleData {
+  return {
+    ...bubble,
+    position: [...bubble.position],
+  };
+}
+
+function cloneSpawnBubbleData(bubble: SpawnBubbleData): SpawnBubbleData {
   return {
     ...bubble,
     position: [...bubble.position],
@@ -119,8 +134,9 @@ function PhysicalBubbles({ speed = 3, count = 80, depth = 30 }: BubblesProps) {
   const groupRef = useRef<THREE.Group | null>(null);
   const spawnControlRef = useRef({ nextSpawnTime: 0 });
 
-  const [initialBubbleData] = useState<BubbleBodyData[]>(() => {
-    const data: BubbleBodyData[] = [];
+  const [initialBubbleData] = useState<BubbleData>(() => {
+    const base: BaseBubbleData[] = [];
+    const spawn: SpawnBubbleData[] = [];
 
     for (let index = 0; index < count; index += 1) {
       const z = MathUtils.lerp(0, depth, index / count);
@@ -129,15 +145,10 @@ function PhysicalBubbles({ speed = 3, count = 80, depth = 30 }: BubblesProps) {
       const yLimit = height * (index === 0 ? 4 : 1);
       const y = MathUtils.randFloatSpread(height * 2) + BUBBLES_GROUP_Y_OFFSET;
 
-      data.push({
-        kind: 'base',
-        index,
+      base.push({
         scale,
-        radius: scale,
         z,
         speedFactor: getBubbleSpeedFactor(scale),
-        active: true,
-        birthTime: 0,
         exitLimit: BUBBLES_GROUP_Y_OFFSET + yLimit,
         resetY: BUBBLES_GROUP_Y_OFFSET - yLimit,
         position: [index === 0 ? 0 : MathUtils.randFloatSpread(width * 1.2), y, -z],
@@ -147,55 +158,154 @@ function PhysicalBubbles({ speed = 3, count = 80, depth = 30 }: BubblesProps) {
     for (let index = 0; index < SPAWN_BUBBLE_COUNT; index += 1) {
       const scale = MathUtils.randFloat(1, 1.2);
 
-      data.push({
-        kind: 'spawn',
-        index: count + index,
+      spawn.push({
         scale,
-        radius: scale,
         z: 0,
         speedFactor: getBubbleSpeedFactor(scale),
         active: false,
         birthTime: 0,
         exitLimit: 0,
-        resetY: 0,
         position: [...HIDDEN_POSITION],
       });
     }
 
-    return data;
+    return { base, spawn };
   });
-  const bubbleDataRef = useRef<BubbleBodyData[]>(initialBubbleData.map(cloneBubbleData));
+  const bubbleDataRef = useRef<BubbleData>({
+    base: initialBubbleData.base.map(cloneBaseBubbleData),
+    spawn: initialBubbleData.spawn.map(cloneSpawnBubbleData),
+  });
+  const initialBubbleCount = initialBubbleData.base.length + initialBubbleData.spawn.length;
 
   const [ref, api] = useSphere<THREE.InstancedMesh>(
     (index) => {
-      const bubble = initialBubbleData[index];
+      const isBaseBubble = index < initialBubbleData.base.length;
+      const bubble = isBaseBubble
+        ? initialBubbleData.base[index]
+        : initialBubbleData.spawn[index - initialBubbleData.base.length];
+      const active = isBaseBubble ? true : (bubble as SpawnBubbleData).active;
 
       return {
-        args: [bubble.radius],
-        mass: bubble.radius * (bubble.kind === 'base' ? 0.55 : 0.45),
+        args: [bubble.scale],
+        mass: bubble.scale * (isBaseBubble ? 0.55 : 0.45),
         position: bubble.position,
         angularDamping: 0.85,
-        linearDamping: bubble.kind === 'base' ? 0.72 : 0.66,
-        collisionResponse: bubble.active,
-        collisionFilterMask: bubble.active ? -1 : 0,
+        linearDamping: isBaseBubble ? 0.72 : 0.66,
+        collisionResponse: active,
+        collisionFilterMask: active ? -1 : 0,
       };
     },
     undefined,
     [initialBubbleData]
   );
 
+  function activateSpawnBubble(bubble: SpawnBubbleData, body: WorkerApi, elapsedTime: number) {
+    const z = MathUtils.randFloat(0, depth * 0.45);
+    const { width, height } = viewport.getCurrentViewport(camera, [0, 0, -z]);
+    const x = MathUtils.randFloatSpread(width * 0.7);
+    const y = MathUtils.randFloat(-height * 0.5, 0);
+
+    bubble.active = true;
+    bubble.birthTime = elapsedTime;
+    bubble.z = z;
+    bubble.exitLimit = height * 2;
+    bubble.speedFactor = getBubbleSpeedFactor(bubble.scale);
+    bubble.position[0] = x;
+    bubble.position[1] = y;
+    bubble.position[2] = -z;
+
+    body.position.set(x, y, -z);
+    body.velocity.set(MathUtils.randFloatSpread(0.35), speed * 0.25, MathUtils.randFloatSpread(0.2));
+    body.angularVelocity.set(MathUtils.randFloatSpread(0.3), MathUtils.randFloatSpread(0.3), MathUtils.randFloatSpread(0.3));
+    body.collisionResponse.set(true);
+    body.collisionFilterMask.set(-1);
+    body.scaleOverride([0, 0, 0]);
+    body.wakeUp();
+  }
+
+  function deactivateSpawnBubble(bubble: SpawnBubbleData, body: WorkerApi) {
+    bubble.active = false;
+    bubble.position[0] = HIDDEN_POSITION[0];
+    bubble.position[1] = HIDDEN_POSITION[1];
+    bubble.position[2] = HIDDEN_POSITION[2];
+
+    body.position.set(...HIDDEN_POSITION);
+    body.velocity.set(0, 0, 0);
+    body.angularVelocity.set(0, 0, 0);
+    body.collisionResponse.set(false);
+    body.collisionFilterMask.set(0);
+    body.scaleOverride([0, 0, 0]);
+    body.sleep();
+  }
+
+  function resetBaseBubble(bubble: BaseBubbleData, body: WorkerApi, index: number) {
+    const { width } = viewport.getCurrentViewport(camera, [0, 0, -bubble.z]);
+    const nextX = index === 0 ? 0 : MathUtils.randFloatSpread(width * 1.2);
+
+    bubble.position[0] = nextX;
+    bubble.position[1] = bubble.resetY;
+    bubble.position[2] = -bubble.z;
+
+    body.position.set(nextX, bubble.resetY, -bubble.z);
+    body.velocity.set(MathUtils.randFloatSpread(0.45), speed * 0.2, MathUtils.randFloatSpread(0.25));
+    body.angularVelocity.set(MathUtils.randFloatSpread(0.4), MathUtils.randFloatSpread(0.4), MathUtils.randFloatSpread(0.4));
+    body.scaleOverride([bubble.scale, bubble.scale, bubble.scale]);
+    body.wakeUp();
+  }
+
+  function applyBubbleForce(
+    bubble: BubbleBodyData,
+    body: WorkerApi,
+    forceMultiplier: number,
+    x: number,
+    z: number
+  ) {
+    body.applyForce(
+      [
+        -x * 0.22,
+        speed * bubble.speedFactor * forceMultiplier,
+        (-bubble.z - z) * 0.18,
+      ],
+      [0, 0, 0]
+    );
+  }
+
+  function updateSpawnScale(bubble: SpawnBubbleData, body: WorkerApi, elapsedTime: number) {
+    const fade = MathUtils.clamp(
+      (elapsedTime - bubble.birthTime) / SPAWN_BUBBLE_FADE_DURATION,
+      0,
+      1
+    );
+    const visualScale = bubble.scale * fade;
+
+    body.scaleOverride([visualScale, visualScale, visualScale]);
+  }
+
   useEffect(() => {
     const bubbleData = bubbleDataRef.current;
-    const unsubscribers = bubbleData.map((bubble, index) =>
-      api.at(index).position.subscribe(([x, y, z]) => {
-        bubble.position[0] = x;
-        bubble.position[1] = y;
-        bubble.position[2] = z;
-      })
-    );
+    const unsubscribers = [
+      ...bubbleData.base.map((bubble, index) =>
+        api.at(index).position.subscribe(([x, y, z]) => {
+          bubble.position[0] = x;
+          bubble.position[1] = y;
+          bubble.position[2] = z;
+        })
+      ),
+      ...bubbleData.spawn.map((bubble, index) =>
+        api.at(bubbleData.base.length + index).position.subscribe(([x, y, z]) => {
+          bubble.position[0] = x;
+          bubble.position[1] = y;
+          bubble.position[2] = z;
+        })
+      ),
+    ];
 
-    bubbleData.forEach((bubble, index) => {
-      const body = api.at(index);
+    bubbleData.base.forEach((bubble, index) => {
+      api.at(index).scaleOverride([bubble.scale, bubble.scale, bubble.scale]);
+    });
+
+    bubbleData.spawn.forEach((bubble, index) => {
+      const body = api.at(bubbleData.base.length + index);
       if (bubble.active) {
         body.scaleOverride([bubble.scale, bubble.scale, bubble.scale]);
       } else {
@@ -219,15 +329,15 @@ function PhysicalBubbles({ speed = 3, count = 80, depth = 30 }: BubblesProps) {
       );
     }
 
-    const bubbleData = bubbleDataRef.current;
+    const { base, spawn } = bubbleDataRef.current;
     const elapsedTime = state.clock.elapsedTime;
     const spawnControl = spawnControlRef.current;
 
     if (elapsedTime >= spawnControl.nextSpawnTime) {
       const openSpawnIndices: number[] = [];
 
-      for (let index = count; index < bubbleData.length; index += 1) {
-        if (!bubbleData[index].active) {
+      for (let index = 0; index < spawn.length; index += 1) {
+        if (!spawn[index].active) {
           openSpawnIndices.push(index);
         }
       }
@@ -240,97 +350,47 @@ function PhysicalBubbles({ speed = 3, count = 80, depth = 30 }: BubblesProps) {
       for (let i = 0; i < spawnCount; i += 1) {
         const openSlotIndex = MathUtils.randInt(0, openSpawnIndices.length - 1);
         const [index] = openSpawnIndices.splice(openSlotIndex, 1);
-        const bubble = bubbleData[index];
-        const z = MathUtils.randFloat(0, depth * 0.45);
-        const { width, height } = viewport.getCurrentViewport(camera, [0, 0, -z]);
-        const x = MathUtils.randFloatSpread(width * 0.7);
-        const y = MathUtils.randFloat(-height * 0.5, 0);
-        const body = api.at(index);
 
-        bubble.active = true;
-        bubble.birthTime = elapsedTime;
-        bubble.z = z;
-        bubble.exitLimit = height * 2;
-        bubble.resetY = y;
-        bubble.speedFactor = getBubbleSpeedFactor(bubble.scale);
-        bubble.position[0] = x;
-        bubble.position[1] = y;
-        bubble.position[2] = -z;
-
-        body.position.set(x, y, -z);
-        body.velocity.set(MathUtils.randFloatSpread(0.35), speed * 0.25, MathUtils.randFloatSpread(0.2));
-        body.angularVelocity.set(MathUtils.randFloatSpread(0.3), MathUtils.randFloatSpread(0.3), MathUtils.randFloatSpread(0.3));
-        body.collisionResponse.set(true);
-        body.collisionFilterMask.set(-1);
-        body.scaleOverride([0, 0, 0]);
-        body.wakeUp();
+        activateSpawnBubble(spawn[index], api.at(base.length + index), elapsedTime);
       }
 
       spawnControl.nextSpawnTime = elapsedTime + SPAWN_BUBBLE_INTERVAL;
     }
 
-    for (let index = 0; index < bubbleData.length; index += 1) {
-      const bubble = bubbleData[index];
+    for (let index = 0; index < base.length; index += 1) {
+      const bubble = base[index];
       const body = api.at(index);
+      const [x, y, z] = bubble.position;
+
+      if (y > bubble.exitLimit) {
+        resetBaseBubble(bubble, body, index);
+        continue;
+      }
+
+      if (delta < 0.1) {
+        applyBubbleForce(bubble, body, 3.1, x, z);
+      }
+    }
+
+    for (let index = 0; index < spawn.length; index += 1) {
+      const bubble = spawn[index];
 
       if (!bubble.active) {
         continue;
       }
 
+      const body = api.at(base.length + index);
       const [x, y, z] = bubble.position;
 
-      if (bubble.kind === 'spawn') {
-        const fade = MathUtils.clamp(
-          (elapsedTime - bubble.birthTime) / SPAWN_BUBBLE_FADE_DURATION,
-          0,
-          1
-        );
-        const visualScale = bubble.scale * fade;
-
-        body.scaleOverride([visualScale, visualScale, visualScale]);
-      }
+      updateSpawnScale(bubble, body, elapsedTime);
 
       if (y > bubble.exitLimit) {
-        if (bubble.kind === 'spawn') {
-          bubble.active = false;
-          bubble.position[0] = HIDDEN_POSITION[0];
-          bubble.position[1] = HIDDEN_POSITION[1];
-          bubble.position[2] = HIDDEN_POSITION[2];
-
-          body.position.set(...HIDDEN_POSITION);
-          body.velocity.set(0, 0, 0);
-          body.angularVelocity.set(0, 0, 0);
-          body.collisionResponse.set(false);
-          body.collisionFilterMask.set(0);
-          body.scaleOverride([0, 0, 0]);
-          body.sleep();
-        } else {
-          const { width } = viewport.getCurrentViewport(camera, [0, 0, -bubble.z]);
-          const nextX = bubble.index === 0 ? 0 : MathUtils.randFloatSpread(width * 1.2);
-
-          bubble.position[0] = nextX;
-          bubble.position[1] = bubble.resetY;
-          bubble.position[2] = -bubble.z;
-
-          body.position.set(nextX, bubble.resetY, -bubble.z);
-          body.velocity.set(MathUtils.randFloatSpread(0.45), speed * 0.2, MathUtils.randFloatSpread(0.25));
-          body.angularVelocity.set(MathUtils.randFloatSpread(0.4), MathUtils.randFloatSpread(0.4), MathUtils.randFloatSpread(0.4));
-          body.scaleOverride([bubble.scale, bubble.scale, bubble.scale]);
-          body.wakeUp();
-        }
-
+        deactivateSpawnBubble(bubble, body);
         continue;
       }
 
       if (delta < 0.1) {
-        body.applyForce(
-          [
-            -x * 0.22,
-            speed * bubble.speedFactor * (bubble.kind === 'spawn' ? 3.6 : 3.1),
-            (-bubble.z - z) * 0.18,
-          ],
-          [0, 0, 0]
-        );
+        applyBubbleForce(bubble, body, 3.6, x, z);
       }
     }
   });
@@ -339,7 +399,7 @@ function PhysicalBubbles({ speed = 3, count = 80, depth = 30 }: BubblesProps) {
     <group ref={groupRef}>
       <instancedMesh
         ref={ref}
-        args={[bubbleGeometry, bubbleMaterial, initialBubbleData.length]}
+        args={[bubbleGeometry, bubbleMaterial, initialBubbleCount]}
         castShadow
         receiveShadow
       />
