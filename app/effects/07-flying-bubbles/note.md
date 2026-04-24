@@ -5,5 +5,4 @@ sourceFiles:
 primarySource: page.tsx
 ---
 
-- MeshTransmissionMaterial 
-- Caustics
+- Spawn Instances
