@@ -2,7 +2,8 @@
 title: Flying Bubbles
 sourceFiles:
   - page.tsx
-primarySource: page.tsx
+  - Bubbles.tsx
+primarySource: Bubbles.tsx
 ---
 
 - Spawn Instances
