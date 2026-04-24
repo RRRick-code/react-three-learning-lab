@@ -65,7 +65,7 @@ type BoundaryProps = {
 
 function createBubbleScale() {
   // 让尺寸更多落在接近 1 或 3 的两端，避免全部泡泡大小太平均。
-  return MathUtils.lerp(1, 3, Math.random() < 0.5 ? Math.pow(Math.random(), 3) * 0.5 : 1 - Math.pow(Math.random(), 3) * 0.5);
+  return MathUtils.lerp(1, 3, Math.random() < 0.4 ? Math.pow(Math.random(), 3) * 0.5 : 1 - Math.pow(Math.random(), 3) * 0.5);
 }
 
 // 克隆数据对象，保持引用不变但内部值可变，方便后续动画直接改 ref 里的数据。
@@ -132,7 +132,8 @@ function BubbleBounds({ depth }: { depth: number }) {
   );
 }
 
-function PhysicalBubbles({ speed = 1, count = 80, depth = 30 }: BubblesProps) {
+// 物理模拟和动画逻辑都在这里实现，保持组件结构清晰。
+function PhysicalBubbles({ speed = 1, count = 100, depth = 30 }: BubblesProps) {
   const { viewport, camera } = useThree();
   const groupRef = useRef<THREE.Group | null>(null);
   const spawnControlRef = useRef({ nextSpawnTime: 0 });
@@ -142,14 +143,13 @@ function PhysicalBubbles({ speed = 1, count = 80, depth = 30 }: BubblesProps) {
     const base: BaseBubbleData[] = [];
     const spawn: SpawnBubbleData[] = [];
 
+    // 根据 count 和 depth，平均分布在不同深度的层里，每层随机散布一定范围内的位置。
     for (let index = 0; index < count; index += 1) {
-      // 不同深度平面的可视宽高不同，所以每个 z 层单独计算散布范围。
       const z = MathUtils.lerp(0, depth, index / count);
       const { width, height } = viewport.getCurrentViewport(camera, [0, 0, -z]);
       const scale = createBubbleScale();
       const yLimit = height * (index === 0 ? 4 : 1);
       const y = MathUtils.randFloatSpread(height * 2) + BUBBLES_GROUP_Y_OFFSET;
-
       base.push({
         scale,
         z,
@@ -160,9 +160,9 @@ function PhysicalBubbles({ speed = 1, count = 80, depth = 30 }: BubblesProps) {
       });
     }
 
+    // spawn 泡泡初始时都放在池里，等生成时再激活并移动到合适位置。
     for (let index = 0; index < SPAWN_BUBBLE_COUNT; index += 1) {
       const scale = MathUtils.randFloat(1, 1.2);
-
       spawn.push({
         scale,
         z: 0,
@@ -173,9 +173,9 @@ function PhysicalBubbles({ speed = 1, count = 80, depth = 30 }: BubblesProps) {
         position: [...HIDDEN_POSITION],
       });
     }
-
     return { base, spawn };
   });
+  
   // cannon 初始化也会读取 initialBubbleData；运行时另拷贝一份，避免直接改初始化数据。
   const bubbleDataRef = useRef<BubbleData>({
     base: initialBubbleData.base.map(cloneBaseBubbleData),
@@ -183,6 +183,7 @@ function PhysicalBubbles({ speed = 1, count = 80, depth = 30 }: BubblesProps) {
   });
   const initialBubbleCount = initialBubbleData.base.length + initialBubbleData.spawn.length;
 
+  // 根据初始数据生成物理碰撞体，cannon 内部会维护实际位置等数据，动画逻辑通过订阅这些数据来驱动。
   const [ref, api] = useSphere<THREE.InstancedMesh>(
     (index) => {
       // instancedMesh 的前半段是 base，后半段是 spawn，索引要映射回各自数组。
