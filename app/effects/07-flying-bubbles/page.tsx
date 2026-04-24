@@ -5,7 +5,7 @@ import { MathUtils } from 'three'
 import { useEffect, useRef, useState } from 'react'
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import { Environment } from '@react-three/drei'
-import { Physics, useBox, useSphere } from '@react-three/cannon'
+import { Physics, useSphere } from '@react-three/cannon'
 import { EffectComposer, N8AO, DepthOfField, ToneMapping } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
 
@@ -15,7 +15,6 @@ const SPAWN_BUBBLE_MAX_PER_TICK = 3;
 const SPAWN_BUBBLE_FADE_DURATION = 1.2;
 const BUBBLES_GROUP_Y_OFFSET = 2.5;
 const HIDDEN_POSITION: [number, number, number] = [9999, 9999, 9999];
-const WALL_THICKNESS = 2;
 
 const bubbleGeometry = new THREE.SphereGeometry(1, 64, 64);
 const bubbleMaterial = new THREE.MeshStandardMaterial({
@@ -49,11 +48,6 @@ type BubblesProps = {
   depth?: number;
 }
 
-type BoundaryProps = {
-  args: [number, number, number];
-  position: [number, number, number];
-}
-
 function createBubbleScale() {
   return MathUtils.lerp(
     1,
@@ -69,52 +63,6 @@ function cloneBubbleData(bubble: BubbleBodyData): BubbleBodyData {
     ...bubble,
     position: [...bubble.position],
   };
-}
-
-function Boundary({ args, position }: BoundaryProps) {
-  const [ref] = useBox<THREE.Mesh>(() => ({
-    args,
-    position,
-    type: 'Static',
-  }));
-
-  return (
-    <mesh ref={ref} visible={false}>
-      <boxGeometry args={args} />
-      <meshBasicMaterial />
-    </mesh>
-  );
-}
-
-function BubbleBounds({ depth }: { depth: number }) {
-  const { viewport, camera } = useThree();
-  const { width, height } = viewport.getCurrentViewport(camera, [0, 0, -depth * 0.5]);
-  const xLimit = width * 0.68;
-  const ySize = height * 7;
-  const zSize = depth + WALL_THICKNESS * 2;
-  const zCenter = -depth * 0.5;
-  const yCenter = BUBBLES_GROUP_Y_OFFSET;
-
-  return (
-    <>
-      <Boundary
-        args={[WALL_THICKNESS, ySize, zSize]}
-        position={[-xLimit - WALL_THICKNESS * 0.5, yCenter, zCenter]}
-      />
-      <Boundary
-        args={[WALL_THICKNESS, ySize, zSize]}
-        position={[xLimit + WALL_THICKNESS * 0.5, yCenter, zCenter]}
-      />
-      <Boundary
-        args={[width * 1.5, ySize, WALL_THICKNESS]}
-        position={[0, yCenter, WALL_THICKNESS * 0.5]}
-      />
-      <Boundary
-        args={[width * 1.5, ySize, WALL_THICKNESS]}
-        position={[0, yCenter, -depth - WALL_THICKNESS * 0.5]}
-      />
-    </>
-  );
 }
 
 function PhysicalBubbles({ speed = 3, count = 80, depth = 30 }: BubblesProps) {
@@ -339,8 +287,6 @@ function PhysicalBubbles({ speed = 3, count = 80, depth = 30 }: BubblesProps) {
 }
 
 function Bubbles(props: BubblesProps) {
-  const depth = props.depth ?? 30;
-
   return (
     <Physics
       gravity={[0, 0, 0]}
@@ -352,7 +298,6 @@ function Bubbles(props: BubblesProps) {
       }}
     >
       <PhysicalBubbles {...props} />
-      <BubbleBounds depth={depth} />
     </Physics>
   );
 }
