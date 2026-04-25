@@ -253,8 +253,20 @@ function PhysicalBubbles({ speed = 1, count = 100, depth = 30 }: BubblesProps) {
   );
 }
 
+// 按视口宽度档位选择 base 泡泡数量，避免窄屏过密。
+function pickBubbleCount(width: number) {
+  if (width <= 375) return 25;
+  if (width <= 768) return 50;
+  if (width <= 1024) return 70;
+  if (width < 1440) return 85;
+  return 100;
+}
+
 export function Bubbles(props: BubblesProps) {
   const depth = props.depth ?? 30;
+  const viewportWidth = useThree((state) => state.size.width);
+  // 挂载时锁定一次，resize 不触发物理重建。
+  const [resolvedCount] = useState(() => props.count ?? pickBubbleCount(viewportWidth));
 
   return (
     // gravity 设为 0，泡泡的上升完全由每帧 applyForce 控制。
@@ -267,7 +279,7 @@ export function Bubbles(props: BubblesProps) {
         contactEquationStiffness: 1e6,
       }}
     >
-      <PhysicalBubbles {...props} />
+      <PhysicalBubbles {...props} count={resolvedCount} />
       <BubbleBounds depth={depth} />
     </Physics>
   );
