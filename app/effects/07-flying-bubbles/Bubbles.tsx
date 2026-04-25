@@ -27,7 +27,7 @@ import {
 const WALL_THICKNESS = 2;
 
 // 所有泡泡共用一份几何体和材质，再由 instancedMesh 批量渲染。
-const bubbleGeometry = new THREE.SphereGeometry(1, 64, 64);
+const bubbleGeometry = new THREE.SphereGeometry(1, 24, 24);
 const bubbleMaterial = new THREE.MeshStandardMaterial({
   roughness: 1,
   color: '#f0f0f0',
@@ -260,7 +260,7 @@ export function Bubbles(props: BubblesProps) {
     // gravity 设为 0，泡泡的上升完全由每帧 applyForce 控制。
     <Physics
       gravity={[0, 0, 0]}
-      iterations={12}
+      iterations={8}
       defaultContactMaterial={{
         friction: 0,
         restitution: 0.65,

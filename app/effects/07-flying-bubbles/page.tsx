@@ -9,14 +9,14 @@ import { Bubbles } from './Bubbles'
 export default function Page() {
   return (
     <div className="h-screen w-full">
-      <Canvas shadows dpr={[1, 2]} 
+      <Canvas shadows dpr={[1, 1.5]} 
       gl={{ antialias: false, toneMappingExposure: 1.2 }} 
       camera={{ position: [0, 0, 15], fov: 45 }}
       >
         <color attach="background" args={['#ffffff']} />
         <Environment preset="city" environmentIntensity={0.2} />
         <ambientLight intensity={3} />
-        <pointLight position={[30, 30, 30]} intensity={120} castShadow decay={1} />
+        <pointLight position={[30, 30, 30]} intensity={120} castShadow color="white"decay={1} />
         <pointLight position={[-30, -50, 0]} color="white" intensity={80} decay={1} />
         <Bubbles />
         <EffectComposer>
