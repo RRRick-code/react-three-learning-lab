@@ -87,7 +87,7 @@ function BubbleBounds({ depth }: { depth: number }) {
 }
 
 // 物理环境和每帧调度留在这里，具体生命周期规则放在同目录 helper 中。
-function PhysicalBubbles({ speed = 1, count = 100, depth = 30 }: BubblesProps) {
+function PhysicalBubbles({ speed = 6, count = 100, depth = 30 }: BubblesProps) {
   const { viewport, camera } = useThree();
   const groupRef = useRef<THREE.Group | null>(null);
   const spawnControlRef = useRef({ nextSpawnTime: 0 });
