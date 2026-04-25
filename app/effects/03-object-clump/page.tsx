@@ -2,7 +2,7 @@
 
 import * as THREE from 'three'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Environment, GizmoHelper, GizmoViewport, OrbitControls, useTexture, Center } from '@react-three/drei'
+import { Environment, GizmoHelper, GizmoViewport, OrbitControls } from '@react-three/drei'
 import { Physics, useSphere } from '@react-three/cannon'
 import { EffectComposer, N8AO, SMAA, Bloom, ToneMapping } from '@react-three/postprocessing'
 import { ToneMappingMode } from "postprocessing"
@@ -11,7 +11,7 @@ const rfs = THREE.MathUtils.randFloatSpread; // randFloatSpread(20) 会返回一
 const sphereGeometry = new THREE.SphereGeometry(1, 32, 32); 
 const baubleMaterial = new THREE.MeshStandardMaterial({ color: "white", roughness: 0.1, envMapIntensity: 1 });
 
-function Clump({ mat = new THREE.Matrix4(), vec = new THREE.Vector3(), ...props }) {
+function Clump({ mat = new THREE.Matrix4(), vec = new THREE.Vector3() }) {
   
   // useSphere 会在物理世界里创建球形刚体碰撞体；这里配合 instancedMesh，一次管理 40 个球。
   const [ref, api] = useSphere<THREE.InstancedMesh>(() => ({
@@ -23,7 +23,7 @@ function Clump({ mat = new THREE.Matrix4(), vec = new THREE.Vector3(), ...props 
   }));
 
   // useFrame 会在每一帧执行：读取每个实例球的位置，再给它一个朝向原点的力，让球群不断向中心聚拢。
-  useFrame((state) => {
+  useFrame(() => {
     for (let i = 0; i < 40; i++) {
       // Get current whereabouts of the instanced sphere
       ref.current.getMatrixAt(i, mat)

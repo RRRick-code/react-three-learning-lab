@@ -27,7 +27,7 @@ import {
 const WALL_THICKNESS = 2;
 
 // 所有泡泡共用一份几何体和材质，再由 instancedMesh 批量渲染。
-const bubbleGeometry = new THREE.SphereGeometry(1, 24, 24);
+const bubbleGeometry = new THREE.SphereGeometry(1, 20, 20);
 const bubbleMaterial = new THREE.MeshStandardMaterial({
   roughness: 1,
   color: '#f0f0f0',
@@ -208,7 +208,7 @@ function PhysicalBubbles({ speed = 1, count = 100, depth = 30 }: BubblesProps) {
       const [x, y, z] = bubble.position;
 
       if (y > bubble.exitLimit) {
-        resetBaseBubble({ bubble, body, index, speed, getViewport });
+        resetBaseBubble({ bubble, body, speed, getViewport });
         continue;
       }
 

@@ -2,7 +2,7 @@
 
 import * as THREE from 'three'
 import { MathUtils } from 'three'
-import { Suspense, useRef, useState } from 'react'
+import { Suspense, useRef } from 'react'
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import { useGLTF, Detailed, Environment } from '@react-three/drei'
 import { EffectComposer, DepthOfField, ToneMapping } from '@react-three/postprocessing'
@@ -22,6 +22,23 @@ type BananasProps = {
   easing?: (x: number) => number;
 }
 
+type BananaGLTF = {
+  nodes: {
+    banana_high: THREE.Mesh;
+    banana_mid: THREE.Mesh;
+    banana_low: THREE.Mesh;
+  };
+  materials: { skin: THREE.MeshStandardMaterial };
+}
+
+type BananaData = {
+  y: number;
+  x: number;
+  spin: number;
+  rX: number;
+  rZ: number;
+}
+
 function Banana({ index, z, speed }: BananaProps) {
   const ref = useRef<THREE.LOD | null>(null);
 
@@ -30,19 +47,24 @@ function Banana({ index, z, speed }: BananaProps) {
   const { width, height } = viewport.getCurrentViewport(camera, [0, 0, -z]);
 
   // 从 glTF 模型里取出不同精度的香蕉几何体和共享材质
-  const { nodes, materials } = useGLTF('assets/banana.glb') as any;
-  
-  const [data] = useState({
-    // 初始纵向位置随机分布，避免所有香蕉从同一条水平线开始
-    y: THREE.MathUtils.randFloatSpread(height * 2),
-    // 横向偏移先存成一个较小系数，真正渲染时再乘上当前可视宽度
-    x: THREE.MathUtils.randFloatSpread(2),
-    // 自转速度随机化，让每根香蕉转得不完全一样
-    spin: THREE.MathUtils.randFloat(8, 12),
-    // X/Z 轴的初始旋转角，避免模型朝向过于整齐
-    rX: Math.random() * Math.PI,
-    rZ: Math.random() * Math.PI,
-  });
+  const { nodes, materials } = useGLTF('assets/banana.glb') as unknown as BananaGLTF;
+
+  // 用 useRef 维护逐帧可变状态：lazy 初始化，仅在第一次渲染时生成随机值
+  const dataRef = useRef<BananaData | null>(null);
+  if (dataRef.current === null) {
+    dataRef.current = {
+      // 初始纵向位置随机分布，避免所有香蕉从同一条水平线开始
+      y: THREE.MathUtils.randFloatSpread(height * 2),
+      // 横向偏移先存成一个较小系数，真正渲染时再乘上当前可视宽度
+      x: THREE.MathUtils.randFloatSpread(2),
+      // 自转速度随机化，让每根香蕉转得不完全一样
+      spin: THREE.MathUtils.randFloat(8, 12),
+      // X/Z 轴的初始旋转角，避免模型朝向过于整齐
+      rX: THREE.MathUtils.randFloat(0, Math.PI),
+      rZ: THREE.MathUtils.randFloat(0, Math.PI),
+    };
+  }
+  const data = dataRef.current;
 
   useFrame ((state, delta) => {
     if (!ref.current) return;

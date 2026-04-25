@@ -22,7 +22,7 @@ export function createBaseBubbles({ count, depth, getViewport }: CreateBaseBubbl
     const z = MathUtils.lerp(0, depth, index / count);
     const { width, height } = getViewport(z);
     const scale = createBubbleScale();
-    const yLimit = height * (index === 0 ? 4 : 1);
+    const yLimit = height;
     const y = MathUtils.randFloatSpread(height * 2) + BUBBLES_GROUP_Y_OFFSET;
     base.push({
       scale,
@@ -30,7 +30,7 @@ export function createBaseBubbles({ count, depth, getViewport }: CreateBaseBubbl
       speedFactor: getBubbleSpeedFactor(scale),
       exitLimit: BUBBLES_GROUP_Y_OFFSET + yLimit,
       resetY: BUBBLES_GROUP_Y_OFFSET - yLimit,
-      position: [index === 0 ? 0 : MathUtils.randFloatSpread(width * 1.2), y, -z],
+      position: [MathUtils.randFloatSpread(width * 1.2), y, -z],
     });
   }
 
@@ -40,21 +40,19 @@ export function createBaseBubbles({ count, depth, getViewport }: CreateBaseBubbl
 type ResetBaseBubbleOptions = {
   bubble: BaseBubbleData;
   body: WorkerApi;
-  index: number;
   speed: number;
   getViewport: GetBubbleViewport;
 }
 
-// base 泡泡飞出顶部后回到底部继续循环，第一个泡泡始终保持在中线附近。
+// base 泡泡飞出顶部后回到底部继续循环。
 export function resetBaseBubble({
   bubble,
   body,
-  index,
   speed,
   getViewport,
 }: ResetBaseBubbleOptions) {
   const { width } = getViewport(bubble.z);
-  const nextX = index === 0 ? 0 : MathUtils.randFloatSpread(width * 1.2);
+  const nextX = MathUtils.randFloatSpread(width * 1.2);
 
   bubble.position[0] = nextX;
   bubble.position[1] = bubble.resetY;
