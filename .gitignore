@@ -21,6 +21,7 @@
 
 # production
 /build
+/app/effects/00-homepage/
 
 # misc
 .DS_Store
@@ -41,3 +42,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
