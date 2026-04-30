@@ -86,8 +86,33 @@ function BubbleBounds({ depth }: { depth: number }) {
   );
 }
 
+function PointerCollider({ depth }: { depth: number }) {
+  const { viewport, camera } = useThree();
+  const pointerDepth = depth * 0.5;
+  const [ref, api] = useSphere<THREE.Group>(() => ({
+    args: [6],
+    position: [0, BUBBLES_GROUP_Y_OFFSET, -pointerDepth],
+    type: 'Kinematic',
+  }));
+
+  useFrame((state) => {
+    const { width, height } = viewport.getCurrentViewport(camera, [0, 0, -pointerDepth]);
+    api.position.set(
+      state.pointer.x * width * 0.5,
+      state.pointer.y * height * 0.5 + BUBBLES_GROUP_Y_OFFSET,
+      -pointerDepth
+    );
+  });
+
+  return (
+    <group ref={ref}>
+      <pointLight intensity={600} distance={16} color="white" />
+    </group>
+  );
+}
+
 // 物理环境和每帧调度留在这里，具体生命周期规则放在同目录 helper 中。
-function PhysicalBubbles({ speed = 6, count = 100, depth = 30 }: BubblesProps) {
+function PhysicalBubbles({ speed = 2, count = 100, depth = 30 }: BubblesProps) {
   const { viewport, camera } = useThree();
   const groupRef = useRef<THREE.Group | null>(null);
   const spawnControlRef = useRef({ nextSpawnTime: 0 });
@@ -280,6 +305,7 @@ export function Bubbles(props: BubblesProps) {
       }}
     >
       <PhysicalBubbles {...props} count={resolvedCount} />
+      <PointerCollider depth={depth} />
       <BubbleBounds depth={depth} />
     </Physics>
   );
