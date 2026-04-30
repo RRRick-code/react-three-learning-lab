@@ -89,25 +89,37 @@ function BubbleBounds({ depth }: { depth: number }) {
 function PointerCollider({ depth }: { depth: number }) {
   const { viewport, camera } = useThree();
   const pointerDepth = depth * 0.5;
-  const [ref, api] = useSphere<THREE.Group>(() => ({
-    args: [6],
-    position: [0, BUBBLES_GROUP_Y_OFFSET, -pointerDepth],
+  const zOffset = depth * 0.12;
+  const frontZ = -(pointerDepth - zOffset);
+  const backZ = -(pointerDepth + zOffset);
+  const lightRef = useRef<THREE.PointLight | null>(null);
+  const [frontRef, frontApi] = useSphere<THREE.Group>(() => ({
+    args: [4.5],
+    position: [0, BUBBLES_GROUP_Y_OFFSET, frontZ],
+    type: 'Kinematic',
+  }));
+  const [backRef, backApi] = useSphere<THREE.Group>(() => ({
+    args: [4.5],
+    position: [0, BUBBLES_GROUP_Y_OFFSET, backZ],
     type: 'Kinematic',
   }));
 
   useFrame((state) => {
     const { width, height } = viewport.getCurrentViewport(camera, [0, 0, -pointerDepth]);
-    api.position.set(
-      state.pointer.x * width * 0.5,
-      state.pointer.y * height * 0.5 + BUBBLES_GROUP_Y_OFFSET,
-      -pointerDepth
-    );
+    const x = state.pointer.x * width * 0.5;
+    const y = state.pointer.y * height * 0.5 + BUBBLES_GROUP_Y_OFFSET;
+
+    frontApi.position.set(x, y, frontZ);
+    backApi.position.set(x, y, backZ);
+    lightRef.current?.position.set(x, y, -pointerDepth);
   });
 
   return (
-    <group ref={ref}>
-      <pointLight intensity={600} distance={16} color="white" />
-    </group>
+    <>
+      <group ref={frontRef} />
+      <group ref={backRef} />
+      <pointLight ref={lightRef} intensity={600} distance={16} color="white" />
+    </>
   );
 }
 
